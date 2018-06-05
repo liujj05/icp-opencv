@@ -65,6 +65,7 @@ static float dist_sq( float *a1, float*a2, int dims ) {
 	return dist_sq;
 }
 
+// 应该是ICP的主算法，返回值应该在 r_final 和 t_final 里面
 float icp(const CvPoint2D32f* new_points,int nb_point_new,
           const CvPoint2D32f* ref_points,int nb_point_ref,
           CvMat * r_final,CvMat *t_final,
@@ -81,17 +82,24 @@ float icp(const CvPoint2D32f* new_points,int nb_point_new,
 	t_final->data.fl[0] = 0.f;
  	t_final->data.fl[1] = 0.f;
 
+	// 遍历一遍参考点，似乎是建立 k-d tree
 	for( i = 0; i < nb_point_ref; i++ ) 
 		kd_insertf((struct kdtree*) ptree, (float*)&ref_points[i], 0);
 
+	// 遍历一遍“新来的点”，初始化了一下input_correlation_new中的内容
 	for( i = 0; i < nb_point_new; i++ )
 		input_correlation_new[i] = new_points[i];
 
+	// 开始迭代，利用了一个 CvTermCriteria 类型的变量 criteria
 	for ( k = 0 ; k < criteria.max_iter; k++ ) {
+
+		// 看起来这个迭代更像是一个二维的问题求解？
 		float R[4]; CvMat r = cvMat(2,2,CV_32F,R);
 		float T[2]; CvMat t = cvMat(2,1,CV_32F,T);
 
 		err = 0.;
+
+		// 遍历所有“新来的点”
 		for( i = 0 ; i < nb_point_new ; i++) {
 			struct kdres * presults = kd_nearestf( (struct kdtree *)ptree, (float*)&input_correlation_new[i]);
 			kd_res_end( presults );
