@@ -12,6 +12,8 @@ iter_num = 30;
 figure;
 hold off;
 
+% 这里仅仅规定了最大迭代数目
+% 原来的程序还规定了：当前后两次的误差变化<阈值的时候，迭代退出
 for j=1:1:iter_num
 
     % 绘制当前ref和new
@@ -25,6 +27,7 @@ for j=1:1:iter_num
 
     
     for i=1:1:nb_point_new
+        % 注意，利用 k-d tree 进行搜索时，先给出来的是index
         res_index = knnsearch(Mdl, input_correlation_new(i,:));
         input_correlation_old(i,:) = ref_points(res_index, :); 
         plot(input_correlation_old(i,1), input_correlation_old(i,2), '+b');
