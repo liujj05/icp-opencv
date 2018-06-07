@@ -158,12 +158,13 @@ void kd_data_destructor(struct kdtree *tree, void (*destr)(void*))
 	tree->destr = destr;
 }
 
-
+// 反倒是这个函数成了核心了
 static int insert_rec(struct kdnode **nptr, const double *pos, void *data, int dir, int dim)
 {
 	int new_dir;
 	struct kdnode *node;
 
+	// 如果输入他的目标指针是空的，就可以挂新节点了
 	if(!*nptr) {
 		if(!(node = malloc(sizeof *node))) {
 			return -1;
@@ -180,7 +181,9 @@ static int insert_rec(struct kdnode **nptr, const double *pos, void *data, int d
 		return 0;
 	}
 
+	// 如果输入的目标指针不是空的，那么分析这个节点
 	node = *nptr;
+	// 所谓的new_dir应该是指 cutting dimention
 	new_dir = (node->dir + 1) % dim;
 	if(pos[node->dir] < node->pos[node->dir]) {
 		return insert_rec(&(*nptr)->left, pos, data, new_dir, dim);
@@ -188,8 +191,12 @@ static int insert_rec(struct kdnode **nptr, const double *pos, void *data, int d
 	return insert_rec(&(*nptr)->right, pos, data, new_dir, dim);
 }
 
-int kd_insert(struct kdtree *tree, const double *pos, void *data)
+// 建立kd tree的核心函数了
+int kd_insert(struct kdtree *tree,  // 基于哪个tree
+	const double *pos, // 从后续的应用当中看出这个变量是需要插入的点坐标数组
+	void *data) // 不知道是什么，用的时候直接给的0
 {
+	// 调用了 insert_rec ，这里，rec指的是：_____（好像是各个维度的数据范围汇总，可以参照前面的结构体定义）
 	if (insert_rec(&tree->root, pos, data, 0, tree->dim)) {
 		return -1;
 	}
@@ -203,12 +210,15 @@ int kd_insert(struct kdtree *tree, const double *pos, void *data)
 	return 0;
 }
 
+// 加了一个f不知道有什么区别，应该是第二个参数从 double* 变成了 float*
+// 例子中用的是这个带f的，不是上面那个
 int kd_insertf(struct kdtree *tree, const float *pos, void *data)
 {
 	static double sbuf[16];
 	double *bptr, *buf = 0;
 	int res, dim = tree->dim;
 
+	// dim 大于 16 的情况单独列了一下
 	if(dim > 16) {
 #ifndef NO_ALLOCA
 		if(dim <= 256)
@@ -222,10 +232,12 @@ int kd_insertf(struct kdtree *tree, const float *pos, void *data)
 		bptr = buf = sbuf;
 	}
 
+	// 高维度的情况会逐一拷贝每个维度的数据指针？但是这个指针是怎么个排序方法？
 	while(dim-- > 0) {
 		*bptr++ = *pos++;
 	}
 
+	// 之后执行的还是 kd_insert
 	res = kd_insert(tree, buf, data);
 #ifndef NO_ALLOCA
 	if(tree->dim > 256)

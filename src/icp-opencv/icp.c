@@ -73,7 +73,9 @@ float icp(const CvPoint2D32f* new_points,int nb_point_new,
 	int k,i;
 	float prev_err = FLT_MAX;
 	float err;
-	struct kdtree *ptree = kd_create( 2 );
+
+	struct kdtree *ptree = kd_create( 2 ); // 创建一个 2d tree
+
 	CvPoint2D32f * input_correlation_old = (CvPoint2D32f *)malloc(sizeof(CvPoint2D32f)*nb_point_new );
 	CvPoint2D32f * input_correlation_new = (CvPoint2D32f *)malloc(sizeof(CvPoint2D32f)*nb_point_new );
     
@@ -83,6 +85,7 @@ float icp(const CvPoint2D32f* new_points,int nb_point_new,
  	t_final->data.fl[1] = 0.f;
 
 	// 遍历一遍参考点，似乎是建立 k-d tree
+	// 很明显，建立 k-d tree 的时候是按照原来的顺序进行初始化的，所以这个 tree 的平衡性或许不是太好
 	for( i = 0; i < nb_point_ref; i++ ) 
 		kd_insertf((struct kdtree*) ptree, (float*)&ref_points[i], 0);
 
@@ -103,6 +106,7 @@ float icp(const CvPoint2D32f* new_points,int nb_point_new,
 		for( i = 0 ; i < nb_point_new ; i++) {
 			struct kdres * presults = kd_nearestf( (struct kdtree *)ptree, (float*)&input_correlation_new[i]);
 			kd_res_end( presults );
+			// 似乎是把当前和 input_correlation_new 也就是 new_points 最近的各个对应点存进了 input_correlation_old 里面
 			kd_res_itemf( presults, (float*)&input_correlation_old[i] );
 			err += sqrtf( dist_sq( (float*)&input_correlation_old[i], (float*)&input_correlation_new[i], 2 ) );
 			if( image ) {
@@ -113,7 +117,10 @@ float icp(const CvPoint2D32f* new_points,int nb_point_new,
 			}
 			kd_res_free( presults );
 		}
+		
+		// 计算旋转矩阵的核心方法
 		getRTMatrixSVD(&input_correlation_new[0],&input_correlation_old[0],nb_point_new,&r,&t);
+
 		for(i = 0; i < nb_point_new ; i++ ) {
 			float x = input_correlation_new[i].x;
 			float y = input_correlation_new[i].y;
