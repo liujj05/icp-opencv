@@ -3,3 +3,4 @@
 xcode_project/*
 vstudio2010/*
 src/example/CMakeLists.txt.rej
+*.asv
