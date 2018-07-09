@@ -9,7 +9,7 @@ input_correlation_new = new_points;
 input_correlation_old = zeros(nb_point_new, 2);
 
 iter_num = 100;
-iter_thresh = 0.05;
+iter_thresh = 0.001;
 
 % figure;
 % hold off;
